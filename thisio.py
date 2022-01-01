@@ -5,6 +5,9 @@ from thisfiles import *
 import threading
 from queue import Queue
 
+from multiprocessing.pool import Pool
+from multiprocessing import JoinableQueue as JQueue
+
 class PathThread(threading.Thread):
     accumulator = dict()
 
@@ -33,7 +36,50 @@ class PathThread(threading.Thread):
             self.printfiles(path)
             self.queue.task_done()
 
-def load_app_memory_parallel(paths, nthread=2):
+def load_app_memory_multiprocess(root_str, npool=2):
+    dct = dict()
+    root = Directory(None, root_str, os.lstat(root_str))
+    dct[root.name] = root
+
+    unsearched = JQueue()
+    for r, s, f in os.walk(root_str): # use listdir, recursively?
+        for i in s + f:
+            print('pushing', r, i, 'into queue')
+            unsearched.put((r, i))
+
+    print('got to joinable queue')
+
+    def class_converter():
+        while True:
+            r, i = unsearched.get() 
+            fname = os.path.join(r, i)
+            try:
+                st = os.lstat(fname)
+                cls = factorydct[S_IFMT(st.st_mode)]
+            except FileNotFoundError:
+                continue
+            except KeyError:
+                continue
+
+            ii = cls(dct[r], i, st)
+            dct[fname] = ii
+            dct[r].children.append(ii)
+
+    print('got past class converter')
+
+    with Pool(npool) as pool:
+        for i in range(npool):
+            pool.apply_async(class_converter)
+
+    print('got past pool apply async')
+
+    unsearched.join()
+
+    print('got past multiprocessing join')
+
+    return root
+
+def load_app_memory_thread(paths, nthread=2):
 
     roots = []
     for str_root in paths:
