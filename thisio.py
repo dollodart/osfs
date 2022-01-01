@@ -16,7 +16,9 @@ class PathThread(threading.Thread):
         self.accumulator = accumulator
 
     def process_paths(self, p):
+        print('walking at', p)
         for r, s, f in os.walk(p, topdown=True):
+            print(r, s, f)
             for i in s + f:
                 #print(fname)
                 fname = os.path.join(r, i)
@@ -34,8 +36,10 @@ class PathThread(threading.Thread):
     def run(self):
         while self.paths:
             path = self.paths.pop()
+            print('path is', path, 'remaining paths are', self.paths)
             self.process_paths(path)
-            self.queue.task_done()
+            print('remaining paths are again', self.paths)
+        #self.task_done()
 
 def load_app_memory_multiprocess(root_str, npool=2):
     dct = dict()
@@ -97,7 +101,7 @@ def load_app_memory_thread(paths, nthread=2):
         # todo: may need to go down many depths to find the required number for the threads
         # recursively call this function in such cases
         #if len(roots) < nthread * 2:
-        #    load_app_memory_thread([r.name for r in roots], nthread = ...)
+        #    load_app_memory_thread([str(r) for r in roots], nthread = ...)
     else:
         roots = [Directory(None, p, os.lstat(p)) for p in paths]
 
@@ -109,8 +113,10 @@ def load_app_memory_thread(paths, nthread=2):
     # note the objects will be linked from the serial in case they were made
     # but those references are never called
     for i in range(nthread):
-        pathqueue = [r.name for r in roots[i*mult:(i+1)*mult]]
-        accumulator = {r.name:r for r in roots[i*mult:(i+1)*mult]}
+        pathqueue = [str(r).lstrip('Directory-')
+                for r in roots[i*mult:(i+1)*mult]]
+        accumulator = {str(r).lstrip('Directory-'):r
+                for r in roots[i*mult:(i+1)*mult]}
         t = PathThread(pathqueue, accumulator) # note: don't need threadsafe queues when they are independent, as here
         t.setDaemon(True)
         print(pathqueue, 'starting now') #accumulator, 'starting now')

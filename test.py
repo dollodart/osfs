@@ -24,8 +24,8 @@ if __name__ == '__main__':
     #test_load_app_memory_thread(dirs)
 
     t0 = time()
-    dirs = ['lib', 'libexec', 'include', 'games', 'src', 'bin', 'share', 'lib64', 'sbin', 'libx32', 'local', 'lib32']
-    dirs = [f'/usr/{f}' for f in dirs]
+    #dirs = ['lib', 'libexec', 'include', 'games', 'src', 'bin', 'share', 'lib64', 'sbin', 'libx32', 'local', 'lib32']
+    #dirs = [f'/usr/{f}' for f in dirs]
     print(dirs)
     r = load_app_memory_thread(dirs, 2)
     print(2, round(time() - t0, 3))
