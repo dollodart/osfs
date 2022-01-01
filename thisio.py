@@ -9,15 +9,16 @@ from multiprocessing.pool import Pool
 from multiprocessing import JoinableQueue as JQueue
 
 class PathThread(threading.Thread):
-    accumulator = dict()
 
-    def __init__(self, queue):
+    def __init__(self, paths, accumulator=dict()):
         threading.Thread.__init__(self)
-        self.queue = queue
+        self.paths = paths
+        self.accumulator = accumulator
 
-    def printfiles(self, p):
+    def process_paths(self, p):
         for r, s, f in os.walk(p, topdown=True):
             for i in s + f:
+                #print(fname)
                 fname = os.path.join(r, i)
                 try:
                     st = os.lstat(fname)
@@ -26,14 +27,14 @@ class PathThread(threading.Thread):
                     continue
                 except KeyError: # unsupported filetype
                     continue
-                ii = cls(self.__class__.accumulator[r], i, st)
-                self.__class__.accumulator[fname] = ii
-                self.__class__.accumulator[r].children.append(ii)
+                ii = cls(self.accumulator[r], i, st)
+                self.accumulator[fname] = ii
+                self.accumulator[r].children.append(ii)
 
     def run(self):
-        while True:
-            path = self.queue.get()
-            self.printfiles(path)
+        while self.paths:
+            path = self.paths.pop()
+            self.process_paths(path)
             self.queue.task_done()
 
 def load_app_memory_multiprocess(root_str, npool=2):
@@ -81,37 +82,55 @@ def load_app_memory_multiprocess(root_str, npool=2):
 
 def load_app_memory_thread(paths, nthread=2):
 
-    roots = []
-    for str_root in paths:
-        root = Directory(None, str_root, os.lstat(str_root))
-        PathThread.accumulator[root.name] = root
-        roots.append(root)
+    first_roots = []
 
-    # threadsafe queue
-    pathqueue = Queue()
+    if len(paths) < nthread * 2:
+        print('going down first depth')
+        roots = []
 
-    # spawn threads
+        for str_root in paths:
+            root = load_app_memory(str_root, depthlimit=2)
+            first_roots.append(root)
+            for child in root.children:
+                if type(child) is Directory:
+                    roots.append(child)
+        # todo: may need to go down many depths to find the required number for the threads
+        # recursively call this function in such cases
+        #if len(roots) < nthread * 2:
+        #    load_app_memory_thread([r.name for r in roots], nthread = ...)
+    else:
+        roots = [Directory(None, p, os.lstat(p)) for p in paths]
+
+    # distribute each independent subdirectory evenly
+    # can't know the size of the subtrees before this, so may be uneven
+    mult = len(roots) // nthread
+
+    # spawn threads, operating independently
+    # note the objects will be linked from the serial in case they were made
+    # but those references are never called
     for i in range(nthread):
-        t = PathThread(pathqueue)
+        pathqueue = [r.name for r in roots[i*mult:(i+1)*mult]]
+        accumulator = {r.name:r for r in roots[i*mult:(i+1)*mult]}
+        t = PathThread(pathqueue, accumulator) # note: don't need threadsafe queues when they are independent, as here
         t.setDaemon(True)
+        print(pathqueue, 'starting now') #accumulator, 'starting now')
         t.start()
+        # no join is needed because these are independent threads
 
-    # add paths to queue
-    for path in paths:
-        pathqueue.put(path)
-
-    # wait for queue to get empty
-    pathqueue.join()
+    if first_roots:
+        return first_roots
 
     return roots
 
-def load_app_memory(string_directory):
+def load_app_memory(string_directory, depthlimit=None):
     # process to natural correspondence binary tree? would need to retain original parent designation
     dct = dict()
     root = Directory(None, string_directory, os.lstat(string_directory))
     dct[root.name] = root
     tstat = tcls = 0
     for r, s, f in os.walk(root.name, topdown=True):
+        if depthlimit is not None and len(r.split('/')) > depthlimit:
+            break
         for i in s + f:
             fname = os.path.join(r, i)
             try:
