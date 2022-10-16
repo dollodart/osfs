@@ -12,7 +12,18 @@ class File():
         self.parent = parent
         self.name = name
         self.st = st
-        self.__class__.total_dir[st.st_ino] = self
+
+        path = []
+        parent = self.parent
+        while parent is not None:
+            name = parent.name
+            path.append(name)
+            parent = parent.parent
+        path = list(reversed(path))
+        path.append(self.name)
+        self.path = '/'.join(path)
+
+        self.__class__.total_dir[self.path] = self
 
         # attributes used for LCA algorithm
         self.rank = None
@@ -48,19 +59,23 @@ class SymLink(File):
     def points_to(self):
         try:
             return File.total_dir[os.stat(self.absolute()).st_ino]
-        except (KeyError, FileNotFoundError):
+        except (KeyError, FileNotFoundError, PermissionError):
             return None
 
 class Mount(File):
+    iter_order = 0
     pass
 
 class BlockDevice(File):
+    iter_order = 0
     pass
 
 class CharDevice(File):
+    iter_order = 0
     pass
 
 class Socket(File):
+    iter_order = 0
     pass
 
 factorydct = {
