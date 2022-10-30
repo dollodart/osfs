@@ -1,9 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from stat import *
+from env import C_OUTPUT_FILENAME
 
-def read_df(filename):
-    with open(filename, 'r') as _:
+def read_df():
+    with open(C_OUTPUT_FILENAME, 'r') as _:
         df = pd.read_csv(_,header=0,on_bad_lines='warn')
     return df
 
@@ -49,5 +50,5 @@ def corr_size_nlinks(df):
     return None
 
 if __name__ == '__main__':
-    df = read_df('filesystem')
+    df = read_df()
     print(dist_file_types(df))
