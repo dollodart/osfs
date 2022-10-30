@@ -11,6 +11,12 @@ def load_app_memory_subroutine(root_str):
     root = load_app_memory(root_str)
     return t0, root
 
+def load_app_memory_subroutine_C():
+    t0 = time()
+    from readstat import gen_nodes
+    root = gen_nodes()
+    return t0, root
+
 def dfs_subroutine(root):
     #dfs
     t1 = time()
@@ -68,7 +74,8 @@ def analytics_subroutine(accs1, accs2, P):
     #
 if __name__ == '__main__':
     rootstrs = ('./fs-ex', '/etc', '/usr', '/lib')
-    t0, root = load_app_memory_subroutine(rootstrs[1])
+    #t0, root = load_app_memory_subroutine(rootstrs[1])
+    t0, root = load_app_memory_subroutine_C()
     t1, accs1, P = dfs_subroutine(root)
     t2, accs2 = lca_subroutine(root, P)
     t3 = analytics_subroutine(accs1, accs2, P)

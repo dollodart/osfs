@@ -60,9 +60,8 @@ class SymLink(File):
     iter_order = 2
     def points_to(self):
         try:
-            #return File.total_inode_dir[self.st.st_ino]
-            return File.total_inode_dir[os.stat(self.absolute()).st_ino]
-        except KeyError as e:
+            return File.total_inode_dir[self.st.pst_ino]
+        except (KeyError, AttributeError) as e:
             try:
                 return File.total_inode_dir[os.stat(self.absolute()).st_ino]
             except (KeyError, FileNotFoundError, PermissionError) as e:

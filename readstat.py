@@ -48,11 +48,13 @@ def gen_nodes():
                 pst_ino, st_nlink, st_uid,\
                 st_gi, st_rdev, st_size,\
                 st_blksize, st_blocks, st_atime,\
-                st_mtim, st_ctime, _ = metadata
-            except ValueError:
+                st_mtim, st_ctime, *_ = metadata
+            except ValueError as e:
+                print('error reading line', i, e)
                 continue
 
-            lstat = StatResult(
+            try:
+                lstat = StatResult(
                     int(st_mode),
                     int(st_ino),
                     int(pst_ino),
@@ -66,6 +68,8 @@ def gen_nodes():
                     int(st_atime),
                     int(st_mtim),
                     int(st_ctime))
+            except ValueError as e:
+                print('error with input data in line', i, e)
 
             fpath = fpath.split('/')
             name = fpath[-1]
@@ -78,7 +82,6 @@ def gen_nodes():
             try:
                 cls = factorydct[S_IFMT(lstat.st_mode)]
             except KeyError:
-                print('error in st_mode of lstat object', lstat.st_mode)
                 continue
             n = cls( parent, name, lstat)
 
