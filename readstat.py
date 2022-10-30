@@ -4,6 +4,7 @@ from time import time
 from datetime import datetime
 from stat import *
 from thisfiles import *
+from env import *
 
 class StatResult:
     def __init__(self, st_mode=0,
@@ -38,7 +39,7 @@ def gen_nodes():
     lim = 10000
     t0 = time()
     root = Directory(None, '', StatResult())
-    with open('filesystem', 'r') as _:
+    with C_OUTPUT as _:
         # fpath,level,st_mode,st_nlink,st_uid,st_gi,st_rdev,st_size,st_blksize,st_blocks,st_atime,st_mtime,st_ctime,
         for i, line in enumerate(_.readlines()[1:]): # skip header column
             fpath, *metadata = line.split(',')
