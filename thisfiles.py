@@ -7,6 +7,7 @@ from stat import (S_IMODE, S_IFMT,
 
 class File():
     total_dir = dict()
+    total_inode_dir = dict()
 
     def __init__(self, parent, name, st):
         self.parent = parent
@@ -24,6 +25,7 @@ class File():
         self.path = '/'.join(path)
 
         self.__class__.total_dir[self.path] = self
+        self.__class__.total_inode_dir[self.st.st_ino] = self
 
         # attributes used for LCA algorithm
         self.rank = None
@@ -58,9 +60,15 @@ class SymLink(File):
     iter_order = 2
     def points_to(self):
         try:
-            return File.total_dir[os.stat(self.absolute()).st_ino]
-        except (KeyError, FileNotFoundError, PermissionError):
-            return None
+            #return File.total_inode_dir[self.st.st_ino]
+            return File.total_inode_dir[os.stat(self.absolute()).st_ino]
+        except KeyError as e:
+            try:
+                return File.total_inode_dir[os.stat(self.absolute()).st_ino]
+            except (KeyError, FileNotFoundError, PermissionError) as e:
+                return None
+        except (FileNotFoundError, PermissionError) as e:
+            pass
 
 class Mount(File):
     iter_order = 0

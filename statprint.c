@@ -10,6 +10,7 @@
 
 
 struct stat lb;
+struct stat plb;
 
 static int
 serialize(const char *fpath, const struct stat *statb,
@@ -19,7 +20,16 @@ serialize(const char *fpath, const struct stat *statb,
   printf("%d,", ftwbuf->level);
   lstat(fpath, &lb); // don't follow symlink
 
+
   printf("%d,", lb.st_mode);    /* protection */
+  printf("%ld,", lb.st_ino);
+  switch (lb.st_mode & S_IFMT) {
+	case S_IFLNK:
+	    stat(fpath, &plb); 
+	    printf("%ld,", plb.st_ino);
+	default:
+	    printf("0,");
+  }
   printf("%ld,", lb.st_nlink);   /* number of hard links */
   printf("%d,", lb.st_uid);     /* user ID of owner */
   printf("%d,", lb.st_gid);     /* group ID of owner */
@@ -49,6 +59,8 @@ main(int argc, char *argv[])
   printf("fpath,");
   printf("level,");
   printf("st_mode,");
+  printf("st_ino,");
+  printf("pst_ino,");
   printf("st_nlink,");
   printf("st_uid,");
   printf("st_gi,");
